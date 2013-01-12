@@ -42,6 +42,7 @@ readonly EXIT_ERROR_NO_TAR=254
 readonly EXIT_ERROR_NO_GZIP=253
 readonly EXIT_ERROR_NO_GIT=252
 readonly EXIT_ERROR_NO_RM=251
+readonly EXIT_ERROR_NO_MV=250
 readonly EXIT_ERROR_ARG=127
 readonly EXIT_ERROR_TARGET_DIR=126
 readonly EXIT_ERROR_NAME_COLLISON=125
@@ -52,11 +53,21 @@ readonly EXIT_ERROR_CHDIR=64
 readonly EXIT_ERROR_MKDIR=65
 readonly EXIT_ERROR_CLEAN=66 
 readonly EXIT_ERROR_CLEAN_TMP=67 
+readonly EXIT_ERROR_MVDIR=68 
 ### vars ###
 #fetch_only=false
 target_dir="$PWD"
 repo="undefined"
 #output_tmp_filename="defined_after_args_parsing"
+
+### check tools ###
+command -v git  >/dev/null 2>&1 &&  git_installed="true"
+command -v wget >/dev/null 2>&1 && wget_installed="true"
+command -v curl >/dev/null 2>&1 && curl_installed="true"
+command -v gzip >/dev/null 2>&1 && gzip_installed="true"
+command -v tar  >/dev/null 2>&1 &&  tar_installed="true"
+command -v rm   >/dev/null 2>&1 &&   rm_installed="true"
+command -v mv   >/dev/null 2>&1 &&   mv_installed="true"
 
 ### functions ###
 # Am I getting paranoid? 
@@ -80,10 +91,15 @@ make_directory() {
 
 clean() {
     clean_dir="$1"
-    rm -rf "${clean_dir}"
-    if [ ! "$?" = 0 ]; then
-        echo "$0: Could not clean directory ${clean_dir}" >&2
-        exit "$EXIT_ERROR_CLEAN"
+    if [ "$rm_installed" ]; then
+        rm -rf "${clean_dir}"
+        if [ ! "$?" = 0 ]; then
+            echo "$0: Could not clean directory ${clean_dir}" >&2
+            exit "$EXIT_ERROR_CLEAN"
+        fi
+    else 
+        echo "$0: rm is not installed" >&2
+        exit "$EXIT_ERROR_NO_RM"
     fi
 }
 
@@ -95,6 +111,40 @@ clean_tmp_file() {
             echo "$0: Could not clear tmp file $ctf_tmp_file" >&2
             exit "$EXIT_ERROR_CLEAN_TMP"
         fi
+    fi
+}
+
+mvdir() {
+    mvdir_old="$1"
+    mvdir_new="$2"
+    if [ "$mv_installed" ]; then
+        mv "$mvdir_old" "$mvdir_new"
+        if [ ! "$?" = 0 ]; then
+            echo "$0: Colud not mv $mvdir_old to $mvdir_new" >&2
+            exit "$EXIT_ERROR_MVDIR"
+        fi
+    else
+        echo "$0: No mv installed" >&2
+        exit "$EXIT_ERROR_NO_MV" 
+    fi
+}
+
+convert_to_git() {
+    cvt_to_git="$1"
+    cvt_to_git_clone_args="$2"
+    cvt_to_git_tmp="${cvt_to_git}-tmp"
+    mvdir "$cvt_to_git" "$cvt_to_git_tmp" 
+    make_directory "$cvt_to_git" 
+    clone "$cvt_to_git_clone_args"
+    clean "$cvt_to_git_tmp"
+}
+        
+clone() {
+    clone_arg="$1"
+    git clone >&2 "$clone_arg"
+    if [ ! "$?" -eq 0 ]; then
+        echo "$0: Could not glone: git clone $clone_arg"
+        exit "$EXIT_ERROR_GIT"
     fi
 }
 
@@ -162,13 +212,6 @@ if [ -e "$repo" ]; then
     fi
 fi
 
-# what tools do we have?
-command -v git  >/dev/null 2>&1 &&  git_installed="true"
-command -v wget >/dev/null 2>&1 && wget_installed="true"
-command -v curl >/dev/null 2>&1 && curl_installed="true"
-command -v gzip >/dev/null 2>&1 && gzip_installed="true"
-command -v tar  >/dev/null 2>&1 &&  tar_installed="true"
-command -v rm   >/dev/null 2>&1 &&   rm_installed="true"
 
 # ERROR: No tools are installed
 if [ ! "$git_installed" ] && [ ! "$wget_installed" ] && [ ! "$curl_installed" ]; then
@@ -180,17 +223,25 @@ change_to_directory $target_dir
 
 ### git ###
 if [ "$git_installed" ]; then 
+    prefix="$GIT_PREFIX"
+    [ "$fetch_only" ] && prefix="$GIT_READ_ONLY_PREFIX"
+    git_args="${prefix}${repo}${GIT_SUFFIX}"
     # try update if repo already exists
     if [ -e "$repo" ]; then 
-        change_to_directory "$repo"
-        git pull
-        [ "$?" -eq 0 ] && exit 
+        # is this a git folder?
+        if [ -e "${repo}/.git" ]; then
+            change_to_directory "$repo"
+            git pull
+            [ "$?" -eq 0 ] && exit
+# or try using wget/curl
+        else
+            convert_to_git "$repo" "$git_args"
+            exit
+        fi
     else 
         # try clone
-        prefix="$GIT_PREFIX"
-        [ "$fetch_only" ] && prefix="$GIT_READ_ONLY_PREFIX"
-        git clone >&2 "${prefix}${repo}${GIT_SUFFIX}"
-        [ "$?" -eq 0 ] && exit 
+        clone "$git_args"
+        exit;
     fi
     exit "$EXIT_ERROR_GIT"
 fi
@@ -211,11 +262,6 @@ fi
 if [ ! "$gzip_installed" ]; then
     echo >&2 "$MSG_TARGZRM"
     exit "$EXIT_ERROR_NO_GZIP"
-fi
-
-if [ ! "$rm_installed" ]; then
-    echo >&2 "$MSG_TARGZRM"
-    exit "$EXIT_ERROR_NO_RM"
 fi
 
 if [ -e "$repo" ]; then
