@@ -1,1 +1,1 @@
-Some personal useful scripts that serves me well.
+Some personal useful scripts that serve me well.
