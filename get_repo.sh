@@ -1,19 +1,25 @@
 #!/bin/sh
 
-# Author: Dominik Danter
+# Author:  Dominik Danter
 #
 # Purpose: Clones or downloads git repository from GitHub
-#          If git is installed repository is cloned. If not 
-#          and "--readolny" is specified the repository will 
-#          be downloaded using either wget or curl.
+#
+#          If git is installed and "--readonly ist not specifed" repository 
+#          is cloned. If git is not installed and "--readolny" is specified 
+#          the repository will be downloaded using either wget or curl.
+#
+# Bugs:    The repository may be named differently depending on wheter it 
+#          is fetched by git or (wget or curl). If repo "foo" is fetched by
+#          wget or curl the folder will be named foo-master
+#
 ###########################################################################
 
 ### CONSTANTS ###
 # Usage
-readonly USAGE="$0: Usage: $0 REPOSITORY_NAME [DIRECTORY] [ --readonly ]"
+readonly USAGE="$0: Usage: $0 <repository_name> [<directory>] [<--readonly>]"
 # Messages
 readonly MSG_TARGZ="$0: tar and gzip required"
-readonly MSG_NO_GIT="No git installed and not readonly (\"-r\" \"--readonly\") specified" 
+readonly MSG_NO_GIT="$0: No git installed and not readonly (\"-r\" \"--readonly\") specified" 
 # Config
 readonly GIT_USERNAME="foop"
 readonly URL_PREFIX="https://github.com/${GIT_USERNAME}/"
@@ -33,7 +39,7 @@ readonly EXIT_ERROR_WGET=2
 readonly EXIT_ERROR_CURL=3
 
 ### vars ###
-fetch_only=false
+#fetch_only=false
 target_dir="$PWD"
 repo="undefined"
 
@@ -42,7 +48,7 @@ repo="undefined"
 ### args parsing ###
 if [ "$#" -gt 3 ] || [ "$#" -lt 1 ]; then
     echo "$USAGE" >&2
-    echo "You have not provided the correct amounts of arguments" >&2;
+    echo "You have not provided the correct amount of arguments" >&2;
     exit "$EXIT_ERROR_ARG"
 fi
 
@@ -63,14 +69,14 @@ if [ "$#" -eq 3 ]; then
         exit "$EXIT_ERROR_ARG"
     fi
     target_dir="$2"
-    fetch_only=true
+    fetch_only="true"
 fi 
 
 if [ "$#" -eq 2 ]; then
     if [ -d $2 ]; then
         target_dir="$2"
-    elif [ ! "$2" = "-r" ] || [ "$2" = "--readonly" ]; then
-        fetch_only=true
+    elif [ "$2" = "-r" ] || [ "$2" = "--readonly" ]; then
+        fetch_only="true"
     else 
         echo "$USAGE" >&2
         echo "$0: $2 must be a directory or \"--readonly\" or \"-r\""
@@ -92,7 +98,7 @@ if [ ! -x "$target_dir" ]; then
 fi
 
 # what tools do we have?
-command -v git  >/dev/null 2>&1 &&  git_installed="true"
+#command -v git  >/dev/null 2>&1 &&  git_installed="true"
 command -v wget >/dev/null 2>&1 && wget_installed="true"
 command -v curl >/dev/null 2>&1 && curl_installed="true"
 command -v gzip >/dev/null 2>&1 && gzip_installed="true"
@@ -122,12 +128,12 @@ fi
 
 ### not git ###
 # we will need tar and gzip
-if [ ! $tar_installed ]; then 
+if [ ! "$tar_installed" ]; then 
     echo >&2 "$MSG_TARGZ"
     exit "$EXIT_ERROR_NO_TAR"
 fi
 
-if [ ! $gzip_installed ]; then
+if [ ! "$gzip_installed" ]; then
     echo >&2 "$MSG_TARGZ"
     exit "$EXIT_ERROR_NO_GZIP"
 fi
