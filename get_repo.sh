@@ -9,11 +9,14 @@
 #          the repository will be downloaded using either wget or curl.
 #          If the project already exists, it will get updatet
 #
-# Bugs:    The repository may be named differently depending on wheter it 
-#          is fetched by git or (wget or curl). If repo "foo" is fetched by
-#          wget or curl the folder will be named foo-master
+# Warning: There is a difference in behaviour depending on whether this
+#          script can use git. If git is *not* installed and there is a 
+#          directory $target/$reponame to which can be changed and written, 
+#          all files therein will be deleted, before intending to get the 
+#          repo. If git is installed, this script will intend to change to 
+#          this directory and execute git pull.
 #
-#          if project was fetched readonly, it will be updated readonly
+# Bugs:    if project was fetched readonly, it will be updated readonly
 #          and gets not promoted, even if "--readonly" was not specified
 #
 ###########################################################################
@@ -28,7 +31,9 @@ readonly MSG_REPO_NAME_COLLISON="$0: $repo already exists and is not a writable 
 # Config
 readonly GIT_USERNAME="foop"
 readonly URL_PREFIX="https://github.com/${GIT_USERNAME}/"
-readonly TAR_SUFFIX="/archive/master.tar.gz"
+readonly TAR_COMMAND="tar xz --strip-components=1"
+#readonly TAR_OPTIONS="xz --strip-components=1"
+readonly TAR_FILE_SUFFIX="/archive/master.tar.gz"
 readonly GIT_PREFIX="git@github.com:${GIT_USERNAME}/"
 readonly GIT_SUFFIX=".git"
 readonly GIT_READ_ONLY_PREFIX="git://github.com/${GIT_USERNAME}/"
@@ -43,11 +48,42 @@ readonly EXIT_ERROR_NAME_COLLISON=125
 readonly EXIT_ERROR_GIT=1
 readonly EXIT_ERROR_WGET=2
 readonly EXIT_ERROR_CURL=3
+readonly EXIT_ERROR_CHDIR=64
+readonly EXIT_ERROR_MKDIR=65
+readonly EXIT_ERROR_CLEAN=66 
 
 ### vars ###
 #fetch_only=false
 target_dir="$PWD"
 repo="undefined"
+
+### functions ###
+# Am I getting paranoid? 
+change_to_directory() {
+    ctd_target_dir="$1" 
+    cd "$ctd_target_dir"
+    if [ ! "$?" = 0 ]; then
+        echo "$0: Could not change to $ctd_target_dir" >&2;
+        exit "$EXIT_ERROR_CHDIR"
+    fi
+}
+
+make_directory() {
+    mkd_target_dir="$1"
+    mkdir "$mkd_target_dir"
+    if [ ! "$?" = 0 ]; then
+        echo "$0: Could not create $mkd_target_dir"
+        exit "$EXIT_ERROR_MKDIR"
+    fi
+}
+
+clean() {
+    rm -rf *
+    if [ ! "$?" = 0 ]; then
+        echo "$0: Could not clean directory $PWD"
+        exit "$EXIT_ERROR_CLEAN"
+    fi
+}
 
 ###########################################################################
 
@@ -103,8 +139,17 @@ if [ ! -x "$target_dir" ]; then
     exit "$EXIT_ERROR_TARGET_DIR"
 fi
 
+# ist there something else than a writable directory named $repo?
+# can we cd into it?
+if [ -e "$repo" ]; then 
+    if [ ! -d "$repo" ] || [ ! -w "$repo" ] || [ ! -x "$repo" ]; then
+        echo >&2 "$MSG_REPO_NAME_COLLISON"
+        exit "$EXIT_ERROR_NAME_COLLISON"
+    fi
+fi
+
 # what tools do we have?
-command -v git  >/dev/null 2>&1 &&  git_installed="true"
+#command -v git  >/dev/null 2>&1 &&  git_installed="true"
 command -v wget >/dev/null 2>&1 && wget_installed="true"
 command -v curl >/dev/null 2>&1 && curl_installed="true"
 command -v gzip >/dev/null 2>&1 && gzip_installed="true"
@@ -116,17 +161,13 @@ if [ ! git_installed ] && [ ! wget_installed ] && [ ! curl_installed ]; then
     exit "$EXIT_ERROR_NO_DOWNLOAD_TOOLS"
 fi
 
-cd $target_dir
+change_to_directory $target_dir
 
 ### git ###
 if [ "$git_installed" ]; then 
-    # try update
+    # try update if repo already exists
     if [ -e "$repo" ]; then 
-        if [ ! -d "$repo" ] || [ ! -w "$repo" ] || [ ! -x "$repo" ]; then
-            echo >&2 "$MSG_REPO_NAME_COLLISON"
-            exit "$EXIT_ERROR_NAME_COLLISON"
-        fi
-        cd "$repo"
+        change_to_directory "$repo"
         git pull
         [ $? -eq 0 ] && exit 
     else 
@@ -146,6 +187,13 @@ fi
 
 ### not git ###
 # we will need tar and gzip
+
+#TODO may be it is not such a good idea to clean and then fetch
+#     what if we have no internet connection? Maybe we still want
+#     to use the scripts even if we cannot update.
+#     possible solutions include: make backup, test connection,
+#                                 use tmp folder
+
 if [ ! "$tar_installed" ]; then 
     echo >&2 "$MSG_TARGZ"
     exit "$EXIT_ERROR_NO_TAR"
@@ -156,16 +204,24 @@ if [ ! "$gzip_installed" ]; then
     exit "$EXIT_ERROR_NO_GZIP"
 fi
 
+if [ -e "$repo" ]; then
+    change_to_directory $repo     
+    clean
+else
+    make_directory $repo
+    change_to_directory $repo
+fi 
+
 ### curl ###
 if [ "$curl_installed" ]; then
-    curl -L ${URL_PREFIX}${repo}${TAR_SUFFIX} | tar xz
+    curl -L ${URL_PREFIX}${repo}${TAR_FILE_SUFFIX} | $TAR_COMMAND
     [ $? -eq 0 ] && exit
     exit "$EXIT_ERROR_CURL"
 fi
 
 ### wget ###
 if [ "$wget_installed" ]; then
-    wget --no-check-certificate ${URL_PREFIX}${repo}${TAR_SUFFIX} -O - | tar xz
+    wget --no-check-certificate ${URL_PREFIX}${repo}${TAR_FILE_SUFFIX} -O - | tar $TAR_COMMAND
     [ $? -eq 0 ] && exit
     exit "$EXIT_ERROR_WGET"
 fi
