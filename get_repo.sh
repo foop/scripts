@@ -163,7 +163,7 @@ if [ -e "$repo" ]; then
 fi
 
 # what tools do we have?
-#command -v git  >/dev/null 2>&1 &&  git_installed="true"
+command -v git  >/dev/null 2>&1 &&  git_installed="true"
 command -v wget >/dev/null 2>&1 && wget_installed="true"
 command -v curl >/dev/null 2>&1 && curl_installed="true"
 command -v gzip >/dev/null 2>&1 && gzip_installed="true"
