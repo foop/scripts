@@ -5,12 +5,16 @@
 # Purpose: Clones or downloads git repository from GitHub
 #
 #          If git is installed and "--readonly ist not specifed" repository 
-#          is cloned. If git is not installed and "--readolny" is specified 
+#          is cloned. If git is not installed and "--readonly" is specified 
 #          the repository will be downloaded using either wget or curl.
+#          If the project already exists, it will get updatet
 #
 # Bugs:    The repository may be named differently depending on wheter it 
 #          is fetched by git or (wget or curl). If repo "foo" is fetched by
 #          wget or curl the folder will be named foo-master
+#
+#          if project was fetched readonly, it will be updated readonly
+#          and gets not promoted, even if "--readonly" was not specified
 #
 ###########################################################################
 
@@ -20,6 +24,7 @@ readonly USAGE="$0: Usage: $0 <repository_name> [<directory>] [<--readonly>]"
 # Messages
 readonly MSG_TARGZ="$0: tar and gzip required"
 readonly MSG_NO_GIT="$0: No git installed and not readonly (\"-r\" \"--readonly\") specified" 
+readonly MSG_REPO_NAME_COLLISON="$0: $repo already exists and is not a writable directory"
 # Config
 readonly GIT_USERNAME="foop"
 readonly URL_PREFIX="https://github.com/${GIT_USERNAME}/"
@@ -34,6 +39,7 @@ readonly EXIT_ERROR_NO_GZIP=253
 readonly EXIT_ERROR_NO_GIT=252
 readonly EXIT_ERROR_ARG=127
 readonly EXIT_ERROR_TARGET_DIR=126
+readonly EXIT_ERROR_NAME_COLLISON=125
 readonly EXIT_ERROR_GIT=1
 readonly EXIT_ERROR_WGET=2
 readonly EXIT_ERROR_CURL=3
@@ -114,10 +120,22 @@ cd $target_dir
 
 ### git ###
 if [ "$git_installed" ]; then 
-    prefix="$GIT_PREFIX"
-    [ $fetch_only ] && prefix="$GIT_READ_ONLY_PREFIX"
-    git clone "${prefix}${repo}${GIT_SUFFIX}"
-    [ $? -eq 0 ] && exit 
+    # try update
+    if [ -e "$repo" ]; then 
+        if [ ! -d "$repo" ] || [ ! -w "$repo" ] || [ ! -x "$repo" ]; then
+            echo >&2 "$MSG_REPO_NAME_COLLISON"
+            exit "$EXIT_ERROR_NAME_COLLISON"
+        fi
+        cd "$repo"
+        git pull
+        [ $? -eq 0 ] && exit 
+    else 
+    # try clone
+        prefix="$GIT_PREFIX"
+        [ $fetch_only ] && prefix="$GIT_READ_ONLY_PREFIX"
+        git clone >&2 "${prefix}${repo}${GIT_SUFFIX}"
+        [ $? -eq 0 ] && exit 
+    fi
     exit "$EXIT_ERROR_GIT"
 fi
 
