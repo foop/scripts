@@ -35,5 +35,4 @@ might not change, except those especially listed below.
 * gpl.txt
 
 >Join us now and share the software, you'll be free Hackers you'll be free-ee-eee 
-
 >-Free software song
