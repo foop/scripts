@@ -10,7 +10,7 @@ is included with the name gpl.txt
 If you know how to make any of my software better, please do not hesitate to contribute.
 Any help ( be it of whatever nature ) is warmly welcomed.
 
-Should you have any special needs of any nature and any of my software is not designed 
+Should you have any special needs and any of my software is not designed 
 well to support your needs, please help me to improve it.
 
 Please do read the comments I put on the top of my scripts. You can contact me
