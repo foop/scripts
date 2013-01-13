@@ -1,5 +1,5 @@
 #!/bin/sh
-
+#                                            get_repo.sh  Copyright (C) 2013
 # Author:  Dominik Danter
 #
 # Purpose: Clones or downloads git repository from GitHub
