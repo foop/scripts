@@ -32,7 +32,7 @@ might not change, except those especially listed below.
 
 ##Guaranteed path and functionality for the forseeable future:
 * get_repo.sh
-∈gpl.txt
+* gpl.txt
 
---- Join us now and share the software, you'll be free
-Free software song
+>Join us now and share the software, you'll be free
+-Free software song
