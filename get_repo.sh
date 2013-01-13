@@ -19,6 +19,11 @@
 # Bugs:    if project was fetched readonly, it will be updated readonly
 #          and gets not promoted, even if "--readonly" was not specified
 #
+#          You even can update the repo where this very script lives with  <---- R E A D    T H I S !
+#          this file. This must however be the last repository that you
+#          specify if you create a batch file fetching or updating multiple
+#          repos. 
+#
 ###########################################################################
 
 ### CONSTANTS ###
