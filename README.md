@@ -1,6 +1,6 @@
 Some personal useful scripts that serve me well. 
 
-Note I do not guarantee that any software works at all. Nor do I promise 
+I do not guarantee that any software works at all. Nor do I promise 
 that this software will not harm your computer or any of your files.
 
 All software released in this repository will be released under the
