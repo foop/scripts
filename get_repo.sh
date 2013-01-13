@@ -52,15 +52,20 @@ readonly USAGE="$0: Usage: $0 <repository_name> [<directory>] [<--readonly>]"
 readonly MSG_TARGZRM="$0: rm, tar and gzip required"
 readonly MSG_NO_GIT="$0: No git installed and not readonly (\"-r\" \"--readonly\") specified" 
 readonly MSG_REPO_NAME_COLLISON="$0: $repo already exists and is not a writable directory"
-# Config
+## Config ##
+# git all
 readonly GIT_USERNAME="foop"
+readonly GIT_SUFFIX=".git"
+# git write access
+readonly GIT_PREFIX="git@github.com:${GIT_USERNAME}/"
+# git read access
+readonly GIT_READ_ONLY_PREFIX="git://github.com/${GIT_USERNAME}/"
+# curl/wget url
 readonly URL_PREFIX="https://github.com/${GIT_USERNAME}/"
+# tar
 readonly TAR_COMMAND="tar --strip-components=1 -xzf"
 readonly TAR_FILE_SUFFIX="/archive/master.tar.gz"
-readonly GIT_PREFIX="git@github.com:${GIT_USERNAME}/"
-readonly GIT_SUFFIX=".git"
-readonly GIT_READ_ONLY_PREFIX="git://github.com/${GIT_USERNAME}/"
-# Error Codes
+## Error Codes ##
 readonly EXIT_ERROR_NO_DOWNLOAD_TOOLS=255
 readonly EXIT_ERROR_NO_TAR=254
 readonly EXIT_ERROR_NO_GZIP=253
