@@ -75,9 +75,9 @@ target_dir="$PWD"
 #output_tmp_filename="defined_after_args_parsing"
 
 ### check tools ###
-#command -v git  >/dev/null 2>&1 &&  git_installed="true"
-#command -v wget >/dev/null 2>&1 && wget_installed="true"
-#command -v curl >/dev/null 2>&1 && curl_installed="true"
+command -v git  >/dev/null 2>&1 &&  git_installed="true"
+command -v wget >/dev/null 2>&1 && wget_installed="true"
+command -v curl >/dev/null 2>&1 && curl_installed="true"
 command -v gzip >/dev/null 2>&1 && gzip_installed="true"
 command -v tar  >/dev/null 2>&1 &&  tar_installed="true"
 command -v rm   >/dev/null 2>&1 &&   rm_installed="true"
