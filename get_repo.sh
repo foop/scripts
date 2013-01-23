@@ -40,6 +40,7 @@
 #          along with this program. If not, see <http://www.gnu.org/licenses/>  
 #
 # Contact the author: 
+#          http://git.foop.at
 #          http://foop.at
 #          dominik@foop.at
 #          
@@ -47,24 +48,10 @@
 
 ### CONSTANTS ###
 # Usage
-readonly USAGE="$0: Usage: $0 <repository_name> [<directory>] [<--readonly>]"
 # Messages
-readonly MSG_TARGZRM="$0: rm, tar and gzip required"
-readonly MSG_NO_GIT="$0: No git installed and not readonly (\"-r\" \"--readonly\") specified" 
-readonly MSG_REPO_NAME_COLLISON="$0: $repo already exists and is not a writable directory"
-## Config ##
-# git all
-readonly GIT_USERNAME="foop"
-readonly GIT_SUFFIX=".git"
-# git write access
-readonly GIT_PREFIX="git@github.com:${GIT_USERNAME}/"
-# git read access
-readonly GIT_READ_ONLY_PREFIX="git://github.com/${GIT_USERNAME}/"
-# curl/wget url
-readonly URL_PREFIX="https://github.com/${GIT_USERNAME}/"
-# tar
-readonly TAR_COMMAND="tar --strip-components=1 -xzf"
-readonly TAR_FILE_SUFFIX="/archive/master.tar.gz"
+readonly MSG_TARGZRM="[$0] rm, tar and gzip required"
+readonly MSG_NO_GIT="[$0] No git installed and not readonly (\"-r\" \"--readonly\") specified" 
+readonly MSG_REPO_NAME_COLLISON="[$0] $repository_name already exists and is not a writable directory"
 ## Error Codes ##
 readonly EXIT_ERROR_NO_DOWNLOAD_TOOLS=255
 readonly EXIT_ERROR_NO_TAR=254
@@ -84,27 +71,24 @@ readonly EXIT_ERROR_CLEAN=66
 readonly EXIT_ERROR_CLEAN_TMP=67 
 readonly EXIT_ERROR_MVDIR=68 
 ### vars ###
-#fetch_only=false
 target_dir="$PWD"
-repo="undefined"
 #output_tmp_filename="defined_after_args_parsing"
 
 ### check tools ###
-command -v git  >/dev/null 2>&1 &&  git_installed="true"
-command -v wget >/dev/null 2>&1 && wget_installed="true"
-command -v curl >/dev/null 2>&1 && curl_installed="true"
+#command -v git  >/dev/null 2>&1 &&  git_installed="true"
+#command -v wget >/dev/null 2>&1 && wget_installed="true"
+#command -v curl >/dev/null 2>&1 && curl_installed="true"
 command -v gzip >/dev/null 2>&1 && gzip_installed="true"
 command -v tar  >/dev/null 2>&1 &&  tar_installed="true"
 command -v rm   >/dev/null 2>&1 &&   rm_installed="true"
 command -v mv   >/dev/null 2>&1 &&   mv_installed="true"
 
 ### functions ###
-# Am I getting paranoid? 
 change_to_directory() {
     ctd_target_dir="$1" 
     cd "$ctd_target_dir"
     if [ ! "$?" = 0 ]; then
-        echo "$0: Could not change to $ctd_target_dir" >&2
+        echo "[$0] Could not change to $ctd_target_dir" >&2
         exit "$EXIT_ERROR_CHDIR"
     fi
 }
@@ -113,7 +97,7 @@ make_directory() {
     mkd_target_dir="$1"
     mkdir "$mkd_target_dir"
     if [ ! "$?" = 0 ]; then
-        echo "$0: Could not create $mkd_target_dir" >&2
+        echo "[$0] Could not create $mkd_target_dir" >&2
         exit "$EXIT_ERROR_MKDIR"
     fi
 }
@@ -123,11 +107,11 @@ clean() {
     if [ "$rm_installed" ]; then
         rm -rf "${clean_dir}"
         if [ ! "$?" = 0 ]; then
-            echo "$0: Could not clean directory ${clean_dir}" >&2
+            echo "[$0] Could not clean directory ${clean_dir}" >&2
             exit "$EXIT_ERROR_CLEAN"
         fi
     else 
-        echo "$0: rm is not installed" >&2
+        echo "[$0] rm is not installed" >&2
         exit "$EXIT_ERROR_NO_RM"
     fi
 }
@@ -137,7 +121,7 @@ clean_tmp_file() {
     if [ -e $ctf_tmp_file ]; then
         rm "$ctf_tmp_file"
         if [ ! "$?" = 0 ]; then
-            echo "$0: Could not clear tmp file $ctf_tmp_file" >&2
+            echo "[$0] Could not clear tmp file $ctf_tmp_file" >&2
             exit "$EXIT_ERROR_CLEAN_TMP"
         fi
     fi
@@ -149,11 +133,11 @@ mvdir() {
     if [ "$mv_installed" ]; then
         mv "$mvdir_old" "$mvdir_new"
         if [ ! "$?" = 0 ]; then
-            echo "$0: Colud not mv $mvdir_old to $mvdir_new" >&2
+            echo "[$0] Colud not mv $mvdir_old to $mvdir_new" >&2
             exit "$EXIT_ERROR_MVDIR"
         fi
     else
-        echo "$0: No mv installed" >&2
+        echo "[$0] No mv installed" >&2
         exit "$EXIT_ERROR_NO_MV" 
     fi
 }
@@ -167,64 +151,131 @@ convert_to_git() {
     clone "$cvt_to_git_clone_args"
     clean "$cvt_to_git_tmp"
 }
-        
+
 clone() {
     clone_arg="$1"
     git clone >&2 "$clone_arg"
     if [ ! "$?" -eq 0 ]; then
-        echo "$0: Could not glone: git clone $clone_arg"
+        echo "[$0] Could not glone: git clone $clone_arg"
         exit "$EXIT_ERROR_GIT"
     fi
 }
 
 ###########################################################################
 
-### args parsing ###
-if [ "$#" -gt 3 ] || [ "$#" -lt 1 ]; then
-    echo "$USAGE" >&2
-    echo "You have not provided the correct amount of arguments" >&2;
-    exit "$EXIT_ERROR_ARG"
+# new
+display_usage() {
+    echo "[$0] Usage: $0 [OPTION...] <REPOSITORY_NAME> [<DIRECTORY>]"
+    echo "[$0] Try:   $0 -h for more information";
+}
+
+display_help() {
+    
+    echo "TODO";
+}
+
+parse_args() {
+    while : ; do
+        case $1 in
+            -h | --help | -\?)
+                display_help;
+                exit $EXIT_SUCCESS;
+                ;;
+            -u | --username | --user_name)
+                git_username="$2"
+                shift 2
+                ;;
+            -u=* | --username=*)
+                git_username="${1#*=}" # everything after =
+                shift
+                ;;
+            -b | --bitbucket | --bit_bucket)
+                bit_bucket="true"
+                shift
+                ;;
+
+            -g | --github | --git_hub)
+                git_hub="true"
+                shift
+                ;;
+
+            -r | --readonly | --read_only)
+                read_only="true"
+                shift
+                ;;
+
+            -v | --version | --show_version)
+                echo "$VERSION"
+                exit $EXIT_SUCESS;
+                ;;
+
+            -y | --repository )
+                if [ ! $repository_name ]; then
+                    repository_name="$2"
+                else echo "I can only process one repository at a time"
+                    display_usage
+                    exit $EXIT_ERROR_ARG
+                fi
+                shift 2
+                ;;
+            -y=* | --repository=*)
+                if [ ! $repository_name ]; then
+                    repository_name="${1#*=}"
+                else echo "I can only process one repository at a time"
+                    display_usage
+                    exit $EXIT_ERROR_ARG
+                fi
+                shift
+                ;;
+
+            *)
+                if [ $1 ]; then
+                    if [ ! $repository_name ]; then
+                        repository_name="$1"
+                    elif [ ! $target_dir ]; then
+                        target_dir="$1"
+                    else 
+                        display_usage
+                        exit $EXIT_ERROR_ARG # <---- SOMETHING IS WRONG
+                    fi
+                else 
+                    if [ ! $repository_name ]; then
+                        display_usage
+                        exit $EXIT_ERROR_ARG 
+                    fi
+                    break # <---- GET ON WITH IT
+                fi
+                shift
+                ;;
+        esac     
+    done
+}
+
+parse_args "$@"
+
+if [ ! $git_username ]; then
+     git_username="foop";
 fi
 
-if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
-    echo "$USAGE"
-    exit
-fi
+## configure our commands
+# git all
+readonly git_suffix=".git"
+# git write access
+readonly git_prefix="git@github.com:${git_username}/"
+# git read access
+readonly git_read_only_prefix="git://github.com/${git_username}/"
+# curl/wget url
+readonly url_prefix="https://github.com/${git_username}/"
+# tar
+readonly tar_command="tar --strip-components=1 -xzf"
+readonly tar_file_suffix="/archive/master.tar.gz"
 
-if [ "$#" -eq 3 ]; then
-    if [ ! -d "$2" ] ; then
-        echo "$USAGE" >&2
-        echo "$0: $2 is not a directory">&2
-        exit "$EXIT_ERROR_ARG"
-    fi
-    if [ ! "$3" = "--readonly" ] && [ ! "$3" = "-r" ]; then
-        echo "$USAGE" >&2
-        echo "$0: \"$3\" must be \"--readonly\" or \"-r\""
-        exit "$EXIT_ERROR_ARG"
-    fi
-    target_dir="$2"
-    fetch_only="true"
-fi 
-
-if [ "$#" -eq 2 ]; then
-    if [ -d $2 ]; then
-        target_dir="$2"
-    elif [ "$2" = "-r" ] || [ "$2" = "--readonly" ]; then
-        fetch_only="true"
-    else 
-        echo "$USAGE" >&2
-        echo "$0: $2 must be a directory or \"--readonly\" or \"-r\""
-        exit "$EXIT_ERROR_ARG"
-    fi
-fi
-
-repo="$1"
-output_tmp_filename="tmp-${GIT_USERNAME}-${repo}.tar.gz"
+output_tmp_filename="tmp-${git_username}-${repository_name}.tar.gz"
 
 ### checks ###
 # check if we can write to target directory
 if [ ! -w "$target_dir" ]; then
-    echo >&2 "$0: $target_dir is not writable"
+    echo >&2 "[$0] $target_dir is not writable"
     exit "$EXIT_ERROR_TARGET_DIR"
 fi
 if [ ! -x "$target_dir" ]; then
@@ -234,8 +285,8 @@ fi
 
 # ist there something else than a writable directory named $repo?
 # can we cd into it?
-if [ -e "$repo" ]; then 
-    if [ ! -d "$repo" ] || [ ! -w "$repo" ] || [ ! -x "$repo" ]; then
+if [ -e "$repository_name" ]; then 
+    if [ ! -d "$repository_name" ] || [ ! -w "$repository_name" ] || [ ! -x "$repository_name" ]; then
         echo >&2 "$MSG_REPO_NAME_COLLISON"
         exit "$EXIT_ERROR_NAME_COLLISON"
     fi
@@ -244,7 +295,7 @@ fi
 
 # ERROR: No tools are installed
 if [ ! "$git_installed" ] && [ ! "$wget_installed" ] && [ ! "$curl_installed" ]; then
-    echo >&2 "$0: I require either git, wget or curl to be installed" 
+    echo >&2 "[$0] I require either git, wget or curl to be installed" 
     exit "$EXIT_ERROR_NO_DOWNLOAD_TOOLS"
 fi
 
@@ -252,19 +303,19 @@ change_to_directory $target_dir
 
 ### git ###
 if [ "$git_installed" ]; then 
-    prefix="$GIT_PREFIX"
-    [ "$fetch_only" ] && prefix="$GIT_READ_ONLY_PREFIX"
-    git_args="${prefix}${repo}${GIT_SUFFIX}"
+    prefix="$git_prefix"
+    [ "$read_only" ] && prefix="$git_read_only_prefix"
+    git_args="${prefix}${repository_name}${git_suffix}"
     # try update if repo already exists
-    if [ -e "$repo" ]; then 
+    if [ -e "$repository_name" ]; then 
         # is this a git folder?
-        if [ -e "${repo}/.git" ]; then
-            change_to_directory "$repo"
+        if [ -e "${repository_name}/.git" ]; then
+            change_to_directory "$repository_name"
             git pull
             [ "$?" -eq 0 ] && exit
-# or try using wget/curl
+            # or try using wget/curl
         else
-            convert_to_git "$repo" "$git_args"
+            convert_to_git "$repository_name" "$git_args"
             exit
         fi
     else 
@@ -275,7 +326,7 @@ if [ "$git_installed" ]; then
     exit "$EXIT_ERROR_GIT"
 fi
 
-if [ ! "$fetch_only" ]; then
+if [ ! "$read_only" ]; then
     echo >&2 "$MSG_NO_GIT"
     exit "$EXIT_ERROR_NO_GIT"
 fi
@@ -293,32 +344,32 @@ if [ ! "$gzip_installed" ]; then
     exit "$EXIT_ERROR_NO_GZIP"
 fi
 
-if [ -e "$repo" ]; then
-    clean "$repo"
+if [ -e "$repository_name" ]; then
+    clean "$repository_name"
 fi
-make_directory "$repo"
+make_directory "$repository_name"
 
 # curl #
 if [ "$curl_installed" ]; then
-    curl -L ${URL_PREFIX}${repo}${TAR_FILE_SUFFIX} --output "$output_tmp_filename"
+    curl -L ${url_prefix}${repository_name}${tar_file_suffix} --output "$output_tmp_filename"
     if [ ! "$?" -eq 0 ]; then
-        echo >&2 "$0: Could not download $repo using curl, maybe connection problems?"
+        echo >&2 "[$0] Could not download $repository_name using curl, maybe connection problems?"
         exit "$EXIT_ERROR_CURL"
     fi
     # wget #
 elif [ "$wget_installed" ]; then
-    wget --no-check-certificate ${URL_PREFIX}${repo}${TAR_FILE_SUFFIX} --output-document "$output_tmp_filename"
+    wget --no-check-certificate ${url_prefix}${repository_name}${tar_file_suffix} --output-document "$output_tmp_filename"
     if [ ! "$?" -eq 0 ]; then
-        echo >&2 "$0: Could not download $repo using wget, maybe connection problems?"
+        echo >&2 "[$0] Could not download $repository_name using wget, maybe connection problems?"
         exit "$EXIT_ERROR_WGET"
     fi
 fi
 
 
 # tar #
-$TAR_COMMAND "$output_tmp_filename" "--directory=$repo"
+$tar_command "$output_tmp_filename" "--directory=$repository_name"
 if [ ! "$?" -eq 0 ]; then
-    echo >&2 "$0: Could not untar $repo using tar, no idea why :("
+    echo >&2 "[$0] Could not untar $repository_name using tar, no idea why :("
     clean_tmp_file "$output_tmp_filename"
     exit "$EXIT_ERROR_CLEAN_TMP";
 fi
