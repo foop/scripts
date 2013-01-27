@@ -8,11 +8,16 @@ use Time::Local;
 
 use Data::Dumper;
 
+my $url_prefix = "http://forum.wiziwig.eu/";
+my $url_forum = "${url_prefix}forums/10-NBA-Basketball";
+my $content = get($url_forum);
+die "Could not get $url_forum" unless defined $content;
 
-my $url = "http://forum.wiziwig.eu/threads/81004-NBA-Today!-January-26th";
+die "Could not parse $url_forum" unless ( $content=~m{href="([^"]+)"[^>]+>NBA\s+Today!} );
+my $url_nba_today = "${url_prefix}$1";
 
-my $content = get($url);
-die "Couldn't get $url" unless defined $content;
+$content = get($url_nba_today);
+die "Couldn't get $url_nba_today" unless defined $content;
 
 my %game;
 
