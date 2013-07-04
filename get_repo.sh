@@ -59,7 +59,7 @@ readonly GIT_SUFFIX=".git"
 # git write access
 readonly GIT_PREFIX="git@github.com:${GIT_USERNAME}/"
 # git read access
-readonly GIT_READ_ONLY_PREFIX="git://github.com/${GIT_USERNAME}/"
+readonly GIT_READ_ONLY_PREFIX="https://github.com/${GIT_USERNAME}/"
 # curl/wget url
 readonly URL_PREFIX="https://github.com/${GIT_USERNAME}/"
 # tar
