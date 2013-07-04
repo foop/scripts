@@ -172,7 +172,7 @@ clone() {
     clone_arg="$1"
     git clone >&2 "$clone_arg"
     if [ ! "$?" -eq 0 ]; then
-        echo "$0: Could not glone: git clone $clone_arg"
+        echo "$0: Could not clone: git clone $clone_arg"
         exit "$EXIT_ERROR_GIT"
     fi
 }
