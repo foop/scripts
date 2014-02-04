@@ -59,7 +59,7 @@ readonly GIT_SUFFIX=".git"
 # git write access
 readonly GIT_PREFIX="git@github.com:${GIT_USERNAME}/"
 # git read access
-readonly GIT_READ_ONLY_PREFIX="git://github.com/${GIT_USERNAME}/"
+readonly GIT_READ_ONLY_PREFIX="https://github.com/${GIT_USERNAME}/"
 # curl/wget url
 readonly URL_PREFIX="https://github.com/${GIT_USERNAME}/"
 # tar
@@ -172,7 +172,7 @@ clone() {
     clone_arg="$1"
     git clone >&2 "$clone_arg"
     if [ ! "$?" -eq 0 ]; then
-        echo "$0: Could not glone: git clone $clone_arg"
+        echo "$0: Could not clone: git clone $clone_arg"
         exit "$EXIT_ERROR_GIT"
     fi
 }
